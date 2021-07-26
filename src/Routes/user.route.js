@@ -2,7 +2,8 @@ const express = require("express");
 const router = express.Router();
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
-const {User} = require('../Models/user.model')
+const {User} = require('../Models/user.model');
+const { authVerify } = require("../utils/authVerify");
 
 const saltRounds = 10;
 const secret =
@@ -14,6 +15,7 @@ router
   .post(async (req, res) => {
     try {
       const user = req.body;
+      console.log(user)
       bcrypt.hash(user.password, saltRounds, async function (err, hash) {
         const NewUser = new User({ ...user, password: hash });
         await NewUser.save();
@@ -32,7 +34,7 @@ router
 router.post("/login", async (req, res) => {
   try {
     const { userName, password } = req.body;
-    const user = await User.findOne({ name: userName });
+    const user = await User.findOne({ userName: userName });
     console.log(userName, password, req.body);
 
     bcrypt.compare(password, user.password, function (err, result) {
@@ -55,5 +57,12 @@ router.post("/login", async (req, res) => {
     res.json({ status: "User not found", errorMessage: error.message });
   }
 });
+
+router.route('/')
+.get(authVerify, async(req, res) => {
+  const {userId} = req.user
+  const user = await User.findById(userId)
+  res.json({status: "success", userData: user})
+})
 
 module.exports = router;
